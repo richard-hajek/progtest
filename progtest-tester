@@ -1,0 +1,173 @@
+#!/bin/bash
+
+set -o errexit -o noclobber -o nounset
+
+read_args(){
+    p= v= t= a= i=
+
+    POSITIONAL=()
+    while [[ $# -gt 0 ]]; do
+        key="$1"
+        case $key in
+            -i|--interactive)
+                i=1
+                shift
+                ;;
+            -t|--test)
+                t="$2"
+                shift
+                shift
+                ;;
+            -a|--address)
+                a=1
+                shift
+                ;;
+            -v|--valgrind)
+                v=1
+                shift
+                ;;
+            *)
+                POSITIONAL+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    set -- "${POSITIONAL[@]}"
+
+    if [[ ! $# -eq 1 ]]; then
+        echo "You must use exactly one positional argument"
+        exit 1
+    fi
+
+    p=$1
+
+    if [[ ! -z "$a" ]] && [[ ! -z "$v" ]]; then
+        echo "You cannot use --address and --valgrind at the same time"
+        exit 1
+    fi
+}
+
+compile(){
+    dir_tests="$p/tests"
+    executable="$p/a.out"
+    main=`echo "$p"/main.c*`
+    compile_cmd="g++ -g -Wall -D__PROGTEST__ -pedantic $main -o $executable"
+
+    if [[ ! -z "$a" ]]; then
+        compile_cmd="$compile_cmd -fsanitize=address"
+    fi
+
+    echo "Compiling with \"${compile_cmd}\"..."
+
+    ${compile_cmd}
+
+    if [[ ! -z "$v" ]]; then
+	    executable="valgrind --leak-check=full ${executable}"
+    fi
+
+    if [[ $? != 0 ]]; then
+        echo "Compilation failed"
+
+    fi
+}
+
+tests_checks(){
+    if [[ ! -d "$dir_tests" ]]; then
+        echo 'Error: invalid test directory path' >&2
+        die
+    fi
+
+    if [[ -z "`ls ${dir_tests}/*_in[^_]* 2>/dev/null`" ]]; then
+        echo 'Error: no test inputs found in specified folder' >&2
+        die
+    fi
+
+    if [[ -z "`ls ${dir_tests}/*_out[^_]*` 2>/dev/null" ]]; then
+        echo 'Error: no test outputs found in specified folder' >&2
+        die
+    fi
+}
+
+test_singular(){
+	
+	# Test input
+	echo -e "\e[1m--------Input--------\e[0m"
+	cat "${dir_tests}/${t}_in.txt"
+	
+	# Expected output
+	echo -e "\e[1m-Expected Output-----\e[0m"
+	cat "${dir_tests}/${t}_out.txt"
+	
+	# Your output
+	echo -e "\e[1m----Your Output------\e[0m"
+	echo "`${executable} < "$dir_tests/${t}_in.txt"`"
+	
+	# Diff
+	echo -e "\e[1m-----Diff run--------\e[0m"
+	DIFF_OUT=`${executable} < "$dir_tests/${t}_in.txt" | diff - "$dir_tests/${t}_out.txt"`
+	echo "$DIFF_OUT"
+	echo ---------------------
+	
+	if [[ -n "$DIFF_OUT" ]]; then
+		echo -e "\e[1;31mDIFF ALERT\e[0m"
+	fi
+}
+
+test_broad(){
+    for input in "$dir_tests"/*_in*; do
+        TEST_IN=`basename $input`
+        TEST_NUM=${TEST_IN%_in.txt}
+        TEST_OUT="${TEST_NUM}_out.txt"
+
+        printf "\e[1;33mtesting\e[0m: %s..." "$TEST_NUM"
+        DIFF_OUT="`${executable} < "$dir_tests/$TEST_IN" | diff - "$dir_tests/$TEST_OUT"`"
+
+        if [[ -n "$DIFF_OUT" ]]; then
+            echo -e "\n\e[1;31mALERT\e[0m: diff produced output:\n${DIFF_OUT}\n"
+            echo "Previous input: " "`cat $input`"
+        else
+             echo -e " \e[1;32mok\e[0m"
+        fi
+
+    done
+}
+
+run_tests(){
+
+    if [[ ! -z "$i" ]]; then
+        ${executable}
+        exit
+    fi
+
+    echo "---Diff legend----"
+    echo "< got"
+    echo "> expected"
+    echo "------------------"
+
+    if [[ ! -z "$t" ]]; then
+        echo Performing singular test...
+        test_singular
+        exit
+    fi
+
+    test_broad
+}
+
+die(){
+
+    if [[ ! -z "$executable" ]]; then
+    	executable=${executable#"valgrind --leak-check=full"}
+        rm ${executable}
+    fi
+}
+
+
+read_args $@
+
+echo "Running with settings: project: $p, valgrind: $v, test: $t, addresscheck: $a"
+
+compile
+tests_checks
+run_tests
+die
