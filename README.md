@@ -19,4 +19,4 @@ Pomocí `-t test` skript spustí jenom jeden test a vypíše detaily testu
 
 `-v` spustí program pomocí `valgrind`
 
-* Autor není zodpovědný za jakékoli škody způsobené používáním skriptu, obsahující ale ne limitující se na: špatně vyhodnocené testy, 0 z progtestu, vymazání celého disku nebo početí 3. světové války *
+*Autor není zodpovědný za jakékoli škody způsobené používáním skriptu, obsahující ale ne limitující se na: špatně vyhodnocené testy, 0 z progtestu, vymazání celého disku nebo početí 3. světové války*
