@@ -7,7 +7,7 @@ Skript testující progtestový projekt, možnost automaticky otestovat -fsaniti
 progtest <složka projektu> [-t test] [-i] [-a] [-v]
 ```
 
-Tento skript očekává jako první argument složku, obsahující progtestový projekt, tedy soubor main.c nebo main.cpp. Dále musí obsahovat složku tests s progtestovými testy. (Tedy soubory <cislo>_in.txt a <cislo>_out.txt)
+Tento skript očekává jako první argument složku, obsahující progtestový projekt, tedy soubor main.c nebo main.cpp. Dále musí obsahovat složku tests s progtestovými testy. (Tedy soubory cislo_in.txt a cislo_out.txt)
 
 By default, tento skript projede všechny testy a reportne neproházející.
 
