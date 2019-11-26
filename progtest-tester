@@ -4,7 +4,7 @@
 set -o noclobber -o nounset
 
 read_args(){
-    p= v= t= a= i=
+    p= v= t= a= i= h=
 
     POSITIONAL=()
     while [[ $# -gt 0 ]]; do
@@ -27,6 +27,10 @@ read_args(){
                 v=1
                 shift
                 ;;
+	    -h|--help)
+		h=1
+		shift
+		;;
             *)
                 POSITIONAL+=("$1")
                 shift
@@ -35,6 +39,11 @@ read_args(){
     done
 
     set -- "${POSITIONAL[@]}"
+
+    if [[ ! -z "$h" ]]; then
+	print_help
+	exit
+    fi
 
     if [[ ! $# -eq 1 ]]; then
         echo "You must use exactly one positional argument"
@@ -136,6 +145,8 @@ test_broad(){
 
 run_tests(){
 
+    echo "Executable: " ${executable}
+
     if [[ ! -z "$i" ]]; then
         ${executable}
         exit
@@ -157,14 +168,31 @@ run_tests(){
 
 die(){
 
+    exit
     if [[ ! -z "$executable" ]]; then
     	executable=${executable#"valgrind --leak-check=full"}
         rm ${executable}
     fi
 }
 
+print_help(){
+    echo "Usage:"
+    echo $' progtest-tester <project directory> [-v|--valgrind] [-a|--address] [-h|--help] [-i|--interactive] [-t|--test <testnum>]'
+    echo ""
+    echo "Arguments:"
+    echo $' -v \tRun program with valgrind'
+    echo $' -a \tCompile program with -fsanitize=address'
+    echo $' -i \tInteractive mode - ignore tests and just run the program'
+    echo $' -h \tPrint this message'
+    echo $' -t <testnum> \tRun only a specific test and show details'
+    echo ""
+    echo "Environment"
+    echo " <project directory> must contain file \"main.c*\" and folder \"tests\""
+}
+
 
 read_args $@
+
 
 echo "Running with settings: project: $p, valgrind: $v, test: $t, addresscheck: $a"
 
