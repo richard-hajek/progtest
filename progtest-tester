@@ -4,7 +4,7 @@
 set -o noclobber -o nounset
 
 read_args(){
-    p= v= t= a= i= h=
+    p= v= t= a= i= h= s= l=
 
     POSITIONAL=()
     while [[ $# -gt 0 ]]; do
@@ -19,6 +19,14 @@ read_args(){
                 shift
                 shift
                 ;;
+	    -s|--sort)
+		s=1
+		shift
+		;;
+	    -l|--linesort)
+		l=1
+		shift
+		;;
             -a|--address)
                 a=1
                 shift
@@ -99,6 +107,30 @@ tests_checks(){
     fi
 }
 
+diff_run(){
+	
+	PIPES=
+
+	if [[ ! -z "$s" ]]; then
+		PIPES="${PIPES} | sort "
+	fi
+
+	if [[ ! -z "$l" ]]; then
+		PIPES="${PIPES} | grep -o . | sort | tr -d \"\\n\""
+	fi
+	
+	EXPECTED=`cat ${dir_tests}/${t}_out.txt`
+	APP=`${executable} < ${dir_tests}/${t}_in.txt`
+	
+	diff <( eval "echo \"$EXPECTED\" $PIPES" ) <(eval "echo \"$APP\" $PIPES") >/dev/null 2>&1
+	
+	if [[ $? != 0 ]]; then
+		diff <(eval "echo \"$APP\"") <( eval "echo \"$EXPECTED\"" )
+	fi
+	# DIS WORKS diff <( eval "${executable} < ${dir_tests}/${t}_in.txt $PIPES" ) <( eval "cat ${dir_tests}/${t}_out.txt $PIPES" )
+
+}
+
 test_singular(){
 	
 	# Test input
@@ -115,7 +147,8 @@ test_singular(){
 	
 	# Diff
 	echo -e "\e[1m-----Diff run--------\e[0m"
-	DIFF_OUT=`${executable} < "$dir_tests/${t}_in.txt" | diff - "$dir_tests/${t}_out.txt"`
+	DIFF_OUT=`diff_run`
+
 	echo "$DIFF_OUT"
 	echo ---------------------
 	
@@ -131,11 +164,15 @@ test_broad(){
         TEST_OUT="${TEST_NUM}_out.txt"
 
         printf "\e[1;33mtesting\e[0m: %s..." "$TEST_NUM"
-        DIFF_OUT="`${executable} < "$dir_tests/$TEST_IN" | diff - "$dir_tests/$TEST_OUT"`"
+        #DIFF_OUT="`${executable} < "$dir_tests/$TEST_IN" | diff - "$dir_tests/$TEST_OUT"`"
+	
+	t=$TEST_NUM
+	DIFF_OUT=`diff_run`
 
         if [[ -n "$DIFF_OUT" ]]; then
-            echo -e "\n\e[1;31mALERT\e[0m: diff produced output:\n${DIFF_OUT}\n"
-            echo "Previous input: " "`cat $input`"
+            echo -e " \e[1;31mFAIL\e[0m"
+            #echo -e "\n\e[1;31mALERT\e[0m: diff produced output:\n${DIFF_OUT}\n"
+            #echo "Previous input: " "`cat $input`"
         else
              echo -e " \e[1;32mok\e[0m"
         fi
@@ -177,7 +214,7 @@ die(){
 
 print_help(){
     echo "Usage:"
-    echo $' progtest-tester <project directory> [-v|--valgrind] [-a|--address] [-h|--help] [-i|--interactive] [-t|--test <testnum>]'
+    echo $' progtest-tester <project directory> [-v|--valgrind] [-a|--address] [-h|--help] [-i|--interactive] [-t|--test <testnum>] [-s|--sort]'
     echo ""
     echo "Arguments:"
     echo $' -v \tRun program with valgrind'
@@ -185,6 +222,8 @@ print_help(){
     echo $' -i \tInteractive mode - ignore tests and just run the program'
     echo $' -h \tPrint this message'
     echo $' -t <testnum> \tRun only a specific test and show details'
+    echo $' -s \tPerform sort on output lines and expected lines - use to compare outputs that may have scrambled lines'
+    echo $' -l \tPerform sort on each line and expected each output line - use to compare outputs that may have scrambled values'
     echo ""
     echo "Environment"
     echo " <project directory> must contain file \"main.c*\" and folder \"tests\""
