@@ -67,7 +67,7 @@ se stane
 
 Vlajka je tedy vhodná, když slova na každém řádku musí být stejná, ale mohou být v jiném pořadí. Toto pořadí se totiž ztratí a zůstane jenom dlouhý string s všemy písmeny výstupů
 
-** Vlajka -l je zvláště náchylná na false positive! Např výstup 2.14 je roven 4.12**
+**Vlajka -l je zvláště náchylná na false positive! Např výstup 2.14 je roven 4.12**
 
 
 *Autor není zodpovědný za jakékoli škody způsobené používáním skriptu, obsahující ale ne limitující se na: špatně vyhodnocené testy, 0 z progtestu, vymazání celého disku nebo početí 3. světové války*
