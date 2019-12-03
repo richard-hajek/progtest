@@ -81,7 +81,7 @@ compile(){
     ${compile_cmd}
 
     if [[ ! -z "$v" ]]; then
-	    executable="valgrind --leak-check=full ${executable}"
+	    executable="valgrind --track-origins=yes --leak-check=full --show-leak-kinds=all ${executable}"
     fi
 
     if [[ $? != 0 ]]; then
@@ -207,7 +207,7 @@ die(){
 
     exit
     if [[ ! -z "$executable" ]]; then
-    	executable=${executable#"valgrind --leak-check=full"}
+    	executable=${executable#"valgrind --track-origins=yes --leak-check=full --show-leak-kinds=all"}
         rm ${executable}
     fi
 }
